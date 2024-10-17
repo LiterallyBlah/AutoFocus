@@ -1,7 +1,7 @@
 tasks:
   - name: "version_check"
     description: "Identify software version numbers for correlation with known issues. Ensure that there is a software and version number."
-    response: Only return the software name and version numbers.
+    response: Only return the software name and version numbers (e.g. cisco:nx_os:4.1).
     output: "version_numbers"
   - name: "points_of_interest"
     description: "Highlight unusual or potentially risky configurations."

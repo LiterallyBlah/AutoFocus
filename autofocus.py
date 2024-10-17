@@ -13,7 +13,7 @@
 #
 # Author: Michael Aguilera
 # Date: 17/10/2024
-# Version: 1.9 (Added tasks.yml validation)
+# Version: 1.99 (Added deduplication and task name in output)
 # ============================================================
 
 import os
@@ -59,9 +59,9 @@ def validate_tasks_file(tasks_file_path):
         print(f"{Fore.RED}Error: Invalid tasks.yml file - {str(e)}")
         return False
 
-def get_analysis_results(text, task):
+def get_analysis_results(text, task, previous_results):
     system_prompt = "You are an AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user. If there is no relevant data found, respond with 'false'."
-    user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nData: {text}\n\n{task['response']}\n\nIf there is no relevant data found, respond with 'false'."
+    user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nPreviously found results: {previous_results}\n\nNew Data: {text}\n\n{task['response']}\nPlease avoid providing information that has already been identified.\n\nIf there is no relevant data found, respond with 'false'."
     
     try:
         response = ollama.chat(model=OLLAMA_MODEL, messages=[
@@ -110,6 +110,7 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
             
             total_windows = (len(content) - window_size) // step_size + 1
             processed_windows = 0
+            previous_results = []
 
             # Loop through content in chunks
             for i in range(0, len(content), step_size):
@@ -117,16 +118,19 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
                 
                 # Perform each task on the chunk
                 for task in tasks:
-                    result = get_analysis_results(window, task)
+                    result = get_analysis_results(window, task, previous_results)
                     if result and result.lower() != "false":  # Check for no result response
                         if task['name'] not in results[target_name]:
                             results[target_name][task['name']] = []
-                        results[target_name][task['name']].append({
-                            "file": file_name,
-                            "chunk_start": i,
-                            "chunk_end": i + window_size,
-                            "result": result
-                        })
+                        if result not in previous_results:
+                            results[target_name][task['name']].append({
+                                "file": file_name,
+                                "chunk_start": i,
+                                "chunk_end": i + window_size,
+                                "task_name": task['name'],
+                                "result": result
+                            })
+                            previous_results.append(result)
                 
                 processed_windows += 1
                 progress = (processed_windows / total_windows) * 100 if total_windows > 0 else 100
