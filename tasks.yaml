@@ -1,13 +1,14 @@
 tasks:
   - name: "version_check"
-    description: "Identify software version numbers for correlation with known issues. Ensure that there is a software and version number."
-    response: Only return the software name and version numbers (e.g. cisco:nx_os:4.1).
+    description: "Identify software version numbers for correlation with known issues. Do not provide any information of the tools used to find the vulnerabilities or the checks performed."
+    response: "Return the software name and version numbers in the format: software_name:version_number."
     output: "version_numbers"
-  - name: "points_of_interest"
-    description: "Highlight unusual or potentially risky configurations."
-    response: Only return POI if there is something unusual or risky. Do not provide redundant information that isn't useful.
-    output: "poi"
+    regex: '([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*):([A-Za-z0-9!@#$%^&*()_+.,-]+)'
+  # - name: "points_of_interest"
+  #   description: "Highlight unusual or potentially risky configurations."
+  #   response: Only return POI if there is something unusual or risky. Do not provide redundant information that isn't useful. The data comes out of scanning tools, so don't say anything about the tool.
+  #   output: "poi"
   - name: "vulnerability_scan"
-    description: "Extract and list all vulnerabilities found."
-    response: Only return vulnerabilities found in the data.
+    description: "Extract and list all vulnerabilities found from the output of tools like nmap, wpscan, etc."
+    response: Only return vulnerabilities found in the data. Do not provide any information of the tools used to find the vulnerabilities or the checks performed.
     output: "vulnerabilities"
