@@ -1,10 +1,13 @@
 tasks:
   - name: "version_check"
-    description: "Identify software version numbers for correlation with known issues. Only return version numbers."
+    description: "Identify software version numbers for correlation with known issues."
+    response: Only return version numbers.
     output: "version_numbers"
   - name: "points_of_interest"
     description: "Highlight unusual or potentially risky configurations."
+    response: Only return POI if there is something unusual or risky.
     output: "poi"
   - name: "vulnerability_scan"
-    description: "Extract and list all vulnerabilities found. Only return vulnerabilities."
+    description: "Extract and list all vulnerabilities found."
+    response: Only return vulnerabilities.
     output: "vulnerabilities"

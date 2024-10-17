@@ -13,7 +13,7 @@
 #
 # Author: Michael Aguilera
 # Date: 17/10/2024
-# Version: 1.7 (CLI enhancements, blacklist directories, update as you go, default blacklist, blacklist file types, whitelist file types)
+# Version: 1.8 (Incorporated task-specific response handling)
 # ============================================================
 
 import os
@@ -36,7 +36,7 @@ init(autoreset=True)
 
 def get_analysis_results(text, task):
     system_prompt = "You are an AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user. If there is no relevant data found, respond with 'false'."
-    user_prompt = f"Analyse the following data for the task: '{task}'. \n\nData: {text}\n\n\nIf there is no relevant data found, respond with 'false'."
+    user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nData: {text}\n\n{task['response']}\n\nIf there is no relevant data found, respond with 'false'."
     
     try:
         response = ollama.chat(model=OLLAMA_MODEL, messages=[
@@ -92,7 +92,7 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
                 
                 # Perform each task on the chunk
                 for task in tasks:
-                    result = get_analysis_results(window, task['description'])
+                    result = get_analysis_results(window, task)
                     if result and result.lower() != "false":  # Check for no result response
                         if task['name'] not in results[target_name]:
                             results[target_name][task['name']] = []
