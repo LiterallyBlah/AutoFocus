@@ -60,7 +60,7 @@ def validate_tasks_file(tasks_file_path):
         return False
 
 def get_analysis_results(text, task, previous_results):
-    system_prompt = "You are an AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user. If there is no relevant data found, respond with 'false'."
+    system_prompt = "You are an penetration testing AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user."
     user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nPreviously found results: {previous_results}\n\nNew Data: {text}\n\n{task['response']}\nDo not provide any information that has already been identified as shown by the previous results.\n\nIf there is no relevant data found, respond with 'false'."
     
     try:
