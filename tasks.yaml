@@ -1,6 +1,6 @@
 tasks:
   - name: "version_check"
-    description: "Identify software version numbers for correlation with known issues. Do not provide any information of the tools used to find the vulnerabilities or the checks performed."
+    description: "Identify software version numbers for correlation with known issues. Do not provide any information of the tools used to find the vulnerabilities or the checks performed. Also consider the context of the scan to determine if this is not applicable."
     response: "Return the software name and version numbers in the format: software_name:version_number."
     output: "version_numbers"
     regex: '([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*):([A-Za-z0-9!@#$%^&*()_+.,-]+)'

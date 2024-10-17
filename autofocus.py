@@ -13,7 +13,7 @@
 #
 # Author: Michael Aguilera
 # Date: 17/10/2024
-# Version: 2.5 (Added optional regex validation for task output)
+# Version: 3.0 (Added better deduplication and html reporting)
 # ============================================================
 
 import os

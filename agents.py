@@ -5,6 +5,11 @@ import re
 import logging
 from colorama import Fore
 from Levenshtein import distance as levenshtein_distance
+from html_reporter import HTMLReporter
+from difflib import SequenceMatcher
+from fuzzywuzzy import fuzz
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,6 +28,36 @@ def log(level, message):
             logger.warning(message)
         elif level == 'ERROR':
             logger.error(message)
+
+# Helper Functions for Text Normalization and Deduplication
+def normalize_text(text):
+    stop_words = set(stopwords.words('english'))
+    stemmer = PorterStemmer()
+    
+    # Lowercase and remove punctuation
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    
+    # Remove stop words and apply stemming
+    words = text.split()
+    filtered_words = [stemmer.stem(word) for word in words if word not in stop_words]
+    return ' '.join(filtered_words)
+
+def is_fuzzy_duplicate(str1, str2, threshold=90):
+    # Calculate a ratio that allows for partial matching and reordering
+    similarity = fuzz.token_sort_ratio(str1, str2)
+    return similarity >= threshold
+
+def are_domain_duplicates(str1, str2):
+    version_pattern = r'(\d+\.\d+(\.\d+)?)'
+    product1 = re.sub(version_pattern, '', str1).strip()
+    product2 = re.sub(version_pattern, '', str2).strip()
+    
+    version1 = re.findall(version_pattern, str1)
+    version2 = re.findall(version_pattern, str2)
+    
+    # Compare product names and versions separately
+    return (product1 == product2) and (version1 == version2)
 
 # Agent Definitions
 class InitialAnalysisAgent:
@@ -93,33 +128,36 @@ class DeduplicationAgent:
         log('INFO', "Starting deduplication process")
         unique_results = []
         for result in results:
-            if self._deduplicate_single(result, previous_results):
+            is_duplicate = False
+            for previous_result in previous_results:
+                # Step 1: Normalize and check if they are identical
+                norm_result = normalize_text(result)
+                norm_previous = normalize_text(previous_result)
+                if norm_result == norm_previous:
+                    is_duplicate = True
+                    break
+
+                # Step 2: Domain-specific rules
+                if are_domain_duplicates(result, previous_result):
+                    is_duplicate = True
+                    break
+
+                # Step 3: Fuzzy matching if needed
+                if is_fuzzy_duplicate(result, previous_result):
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
                 unique_results.append(result)
+
         log('INFO', f"Deduplication completed. {len(unique_results)} unique results found")
-        return unique_results  # Only return unique results
-
-    def _deduplicate_single(self, result, previous_results):
-        log('DEBUG', f"Checking for duplication: {result[:50]}...")
-
-        # Check if the result is already in previous_results
-        if result in previous_results:
-            log('DEBUG', "Duplicate found in previous results")
-            return False
-
-        # Use Levenshtein distance to check for similar results
-        similarity_threshold = 8  # Define an acceptable threshold for similarity
-        for previous_result in previous_results:
-            distance = levenshtein_distance(result, previous_result)
-            log('DEBUG', f"Levenshtein distance between '{result[:50]}...' and '{previous_result[:50]}...': {distance}")
-            if distance <= similarity_threshold:
-                log('DEBUG', "Duplicate found based on Levenshtein distance")
-                return False
-
-        log('DEBUG', "Result is unique")
-        return True
+        return unique_results
 
 
 class ConsolidationAgent:
+    def __init__(self):
+        self.html_reporter = HTMLReporter()
+
     def consolidate(self, target_name, results, output_path):
         log('INFO', f"Starting consolidation for target: {target_name}")
         # Load existing results if the file already exists
@@ -144,8 +182,14 @@ class ConsolidationAgent:
         log('INFO', f"Saving consolidated results to {output_path}")
         with open(output_path, 'w', encoding='utf-8') as json_file:
             json.dump(existing_results, json_file, indent=4, ensure_ascii=False)
-        log('INFO', "Consolidation completed successfully")
+        
+        # Generate HTML report
+        html_output_path = os.path.splitext(output_path)[0] + '.html'
+        self.html_reporter.generate_report(existing_results, html_output_path)
+        
+        log('INFO', "Consolidation and HTML report generation completed successfully")
         print(f"\n{Fore.GREEN}Results consolidated and saved to {output_path}")
+        print(f"{Fore.GREEN}HTML report generated: {html_output_path}")
 
 def enable_logging():
     global LOGGING_ENABLED

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoFocus Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #2c3e50; }
+        .target { background-color: #ecf0f1; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .task { background-color: #fff; padding: 10px; margin-bottom: 10px; border: 1px solid #bdc3c7; border-radius: 3px; }
+        .result { margin-left: 20px; }
+        .meta { color: #7f8c8d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>AutoFocus Analysis Report</h1>
+    <p>Generated on: {{ generated_date }}</p>
+
+    {% for target in targets %}
+    <div class="target">
+        <h2>Target: {{ target.name }}</h2>
+        {% for task in target.tasks %}
+        <div class="task">
+            <h3>{{ task.name }}</h3>
+            {% for result in task.results %}
+            <div class="result">
+                <p><strong>Result:</strong> {{ result.result }}</p>
+                <p class="meta">File: {{ result.file }}, Chunk: {{ result.chunk_start }}-{{ result.chunk_end }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</body>
+</html>
