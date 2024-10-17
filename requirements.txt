@@ -1,0 +1,4 @@
+ollama
+PyYAML
+colorama
+python-dotenv

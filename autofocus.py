@@ -13,7 +13,7 @@
 #
 # Author: Michael Aguilera
 # Date: 17/10/2024
-# Version: 1.8 (Incorporated task-specific response handling)
+# Version: 1.9 (Added tasks.yml validation)
 # ============================================================
 
 import os
@@ -33,6 +33,31 @@ OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5')
 
 # Initialise colorama for coloured output
 init(autoreset=True)
+
+def validate_tasks_file(tasks_file_path):
+    """
+    Validate the structure of the tasks.yml file to ensure it matches the expected format.
+    """
+    try:
+        with open(tasks_file_path, 'r', encoding='utf-8') as tasks_file:
+            tasks_data = yaml.safe_load(tasks_file)
+            
+            if 'tasks' not in tasks_data:
+                raise ValueError("Missing 'tasks' key in tasks.yml file.")
+            
+            required_fields = ['name', 'description', 'response', 'output']
+            for task in tasks_data['tasks']:
+                for field in required_fields:
+                    if field not in task:
+                        raise ValueError(f"Each task must contain '{field}' field.")
+                    if not isinstance(task[field], str):
+                        raise ValueError(f"The '{field}' field must be a string.")
+        
+        print(f"{Fore.GREEN}Tasks file validation passed.")
+        return True
+    except Exception as e:
+        print(f"{Fore.RED}Error: Invalid tasks.yml file - {str(e)}")
+        return False
 
 def get_analysis_results(text, task):
     system_prompt = "You are an AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user. If there is no relevant data found, respond with 'false'."
@@ -147,7 +172,11 @@ def main():
     if not os.path.exists(tasks_file_path):
         print(f"{Fore.RED}Error: Tasks file not found")
         return
-    
+
+    # Validate tasks file
+    if not validate_tasks_file(tasks_file_path):
+        return
+
     # Load tasks from tasks.yml
     with open(tasks_file_path, 'r', encoding='utf-8') as tasks_file:
         tasks = yaml.safe_load(tasks_file)['tasks']
