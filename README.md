@@ -68,12 +68,20 @@ This command processes the reconnaissance data from the specified input director
 
 ## Task Configuration
 
-Tasks are specified in a YAML file, and each task requires:
+Tasks are specified in a YAML file, and each task requires careful configuration and prompt engineering to achieve optimal results:
 
 - **name**: A unique identifier for the task.
-- **description**: A brief description of what the task checks for.
-- **response**: Instructions for the LLM on what to return (e.g., version numbers, points of interest, vulnerabilities).
+- **description**: A brief description of what the task checks for. This should be clear and specific to guide the LLM's focus.
+- **response**: Instructions for the LLM on what to return (e.g., version numbers, points of interest, vulnerabilities). These instructions need to be fine-tuned to elicit precise and relevant responses.
 - **output**: The structure of the result in the final JSON output.
+
+Fine-tuning and prompt engineering are crucial for each task:
+
+1. **Precision**: Craft prompts that encourage the LLM to provide specific, targeted information.
+2. **Consistency**: Ensure prompts maintain a consistent format across tasks for easier processing.
+3. **Context**: Provide enough context in the description to guide the LLM's understanding of the task's purpose.
+4. **Iterative Improvement**: Regularly review and refine prompts based on the quality of results obtained.
+5. **Avoid Ambiguity**: Use clear, unambiguous language to prevent misinterpretation by the LLM.
 
 Example (`tasks.yaml`):
 ```yaml

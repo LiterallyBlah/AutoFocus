@@ -61,7 +61,7 @@ def validate_tasks_file(tasks_file_path):
 
 def get_analysis_results(text, task, previous_results):
     system_prompt = "You are an AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user. If there is no relevant data found, respond with 'false'."
-    user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nPreviously found results: {previous_results}\n\nNew Data: {text}\n\n{task['response']}\nPlease avoid providing information that has already been identified.\n\nIf there is no relevant data found, respond with 'false'."
+    user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nPreviously found results: {previous_results}\n\nNew Data: {text}\n\n{task['response']}\nDo not provide any information that has already been identified as shown by the previous results.\n\nIf there is no relevant data found, respond with 'false'."
     
     try:
         response = ollama.chat(model=OLLAMA_MODEL, messages=[
@@ -79,7 +79,7 @@ def get_analysis_results(text, task, previous_results):
         print(f"{Fore.RED}Error: Unable to get response from Ollama - {str(e)}")
         return None
 
-def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_types, whitelist_file_types, output_path, window_size=500, step_size=250):
+def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_types, whitelist_file_types, output_path, window_size=500, step_size=400):
     results = {}
     
     # Walk through all directories and files recursively
@@ -131,7 +131,8 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
                                 "result": result
                             })
                             previous_results.append(result)
-                
+                            if len(previous_results) > 2:
+                                previous_results.pop(0)
                 processed_windows += 1
                 progress = (processed_windows / total_windows) * 100 if total_windows > 0 else 100
                 print(f"\r{Fore.CYAN}Progress: {progress:.2f}%", end="", flush=True)
@@ -153,7 +154,7 @@ def main():
     parser.add_argument("-bt", "--blacklist_file_types", nargs='*', default=[], help="List of file types to blacklist from analysis (e.g., .log, .tmp)")
     parser.add_argument("-wt", "--whitelist_file_types", nargs='*', default=[], help="List of file types to whitelist for analysis (e.g., .txt, .json)")
     parser.add_argument("-w", "--window_size", type=int, default=500, help="Size of the data chunk window for analysis (default: 500 characters)")
-    parser.add_argument("-s", "--step_size", type=int, default=250, help="Step size for moving through data chunks (default: 250 characters)")
+    parser.add_argument("-s", "--step_size", type=int, default=400, help="Step size for moving through data chunks (default: 400 characters)")
     args = parser.parse_args()
 
     # Ensure blacklist and whitelist are not used together
