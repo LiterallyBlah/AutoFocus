@@ -1,0 +1,10 @@
+tasks:
+  - name: "version_check"
+    description: "Identify software version numbers for correlation with known issues"
+    output: "version_numbers"
+  - name: "points_of_interest"
+    description: "Highlight unusual or potentially risky configurations"
+    output: "poi"
+  - name: "vulnerability_scan"
+    description: "Extract and list all vulnerabilities found"
+    output: "vulnerabilities"
