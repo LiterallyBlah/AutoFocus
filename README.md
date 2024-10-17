@@ -19,13 +19,13 @@
 
 ### Prerequisites
 - Python 3.8 or later
-- A local large language model (e.g., GPT-based) to enable offline processing
+- A local large language model (e.g., Qwen 2.5) to enable offline processing
 - AutoRecon for gathering initial data
 
 ### Installation
 Clone the repository:
 ```bash
-git clone https://github.com/yourusername/AutoFocus.git
+git clone https://github.com/LiterallyBlah/AutoFocus.git
 cd AutoFocus
 ```
 
