@@ -8,13 +8,13 @@
 
 - **AI-Powered Chunked Data Processing**: AutoFocus uses a local Large Language Model (LLM) to analyse files in manageable chunks. This allows for efficient handling of large datasets, especially those generated during extensive reconnaissance efforts.
 
-- **Task-Based Analysis**: The tool utilises configurable tasks, specified via YAML or JSON, to define the specific data points that need analysis, such as version numbers, points of interest, and vulnerabilities. Each task is designed to target specific objectives in the data.
+- **Task-Based Analysis**: The tool utilises configurable tasks, specified via YAML, to define the specific data points that need analysis, such as version numbers, points of interest, and vulnerabilities. Each task is designed to target specific objectives in the data.
 
 - **Structured JSON Output**: All findings are saved in a structured JSON format, with results organised by IP address and task type. This structured output allows for easy integration into other tools or streamlined reporting.
 
 - **Progress Updates and Error Handling**: Provides continuous progress updates during the analysis process and includes error-handling mechanisms to ensure reliable operation during data processing.
 
-- **Extensible and Customisable**: AutoFocus is flexible and can easily be adapted to meet the needs of different reconnaissance scenarios. Users can add or modify tasks by editing the `tasks.yaml` or `tasks.json` configuration files.
+- **Extensible and Customisable**: AutoFocus is flexible and can easily be adapted to meet the needs of different reconnaissance scenarios. Users can add or modify tasks by editing the `tasks.yaml` configuration files.
 
 ## How It Works
 
@@ -53,10 +53,10 @@ pip install -r requirements.txt
 
 2. Run AutoFocus:
    ```bash
-   python autofocus.py --input /path/to/autorecon/output --output /path/to/output.json
+   python autofocus.py --input /path/to/autorecon/output --output /path/to/output/directory
    ```
 
-3. Configure analysis tasks by editing the `tasks.yaml` (or `tasks.json`) file, where you can define the tasks you want AutoFocus to perform.
+3. Configure analysis tasks by editing the `tasks.yaml` file, where you can define the tasks you want AutoFocus to perform.
 
 ### Example Command
 
