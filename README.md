@@ -16,6 +16,12 @@
 
 - **Extensible and Customisable**: AutoFocus is flexible and can easily be adapted to meet the needs of different reconnaissance scenarios. Users can add or modify tasks by editing the `tasks.yaml` configuration files.
 
+- **Advanced Deduplication**: Implements sophisticated deduplication techniques, including text normalisation, domain-specific rules, and fuzzy matching to ensure unique and relevant results.
+
+- **HTML Reporting**: Generates an interactive HTML report alongside the JSON output, providing a user-friendly interface for reviewing analysis results.
+
+- **Logging System**: Incorporates a comprehensive logging system for better debugging and tracking of the analysis process.
+
 ## How It Works
 
 AutoFocus employs a multi-agent system to process and analyse reconnaissance data:
@@ -28,11 +34,11 @@ AutoFocus employs a multi-agent system to process and analyse reconnaissance dat
 
 4. **Verification**: The `VerificationAgent` takes the initial results and verifies them, ensuring they adhere to the specified format for each task. It can also apply regex validation if defined in the task.
 
-5. **Deduplication**: The `DeduplicationAgent` checks for duplicate or highly similar results using Levenshtein distance, ensuring that only unique findings are reported.
+5. **Deduplication**: The `DeduplicationAgent` employs advanced techniques to check for duplicate or highly similar results, ensuring that only unique findings are reported. This includes text normalisation, domain-specific rules, and fuzzy matching.
 
-6. **Consolidation**: The `ConsolidationAgent` combines the results for each target and task, updating the JSON output file after processing each file.
+6. **Consolidation**: The `ConsolidationAgent` combines the results for each target and task, updating the JSON output file after processing each file. It also generates an HTML report for easy result visualisation.
 
-7. **Results Output**: The final results are saved in a structured JSON format, organised by target IP and task type.
+7. **Results Output**: The final results are saved in both structured JSON format and an interactive HTML report, organised by target IP and task type.
 
 ## Getting Started
 
