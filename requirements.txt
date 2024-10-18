@@ -3,3 +3,6 @@ PyYAML
 colorama
 python-dotenv
 Levenshtein
+jinja2
+fuzzywuzzy
+nltk
