@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 LOGGING_ENABLED = True
 
 # Global Ollama client
-ollama_client = Client()
+ollama_client = Client(timeout=5)
 
 def log(level, message):
     if LOGGING_ENABLED:
@@ -79,8 +79,7 @@ class BaseAgent:
                 messages=[
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': user_prompt},
-                ],
-                options={"timeout": 5}  # Add a 5-second timeout
+                ]
             )
             return response['message']['content'].strip()
         except Exception as e:
@@ -105,12 +104,15 @@ class InitialAnalysisAgent(BaseAgent):
                 log('INFO', f"Analysis completed for task: {task['name']} with no relevant results")
                 return []
             else:
-                # Apply regex check if available
+                if 'blacklist' in task:
+                    blacklist_words = task['blacklist']
+                    result_list = [item for item in result_list if not any(word.lower() in item.lower() for word in blacklist_words)]
+
                 if 'regex' in task:
                     log('DEBUG', f"Performing regex validation for task: {task['name']}")
                     regex = task['regex']
                     matches = [match for item in result_list for match in re.findall(regex, item)]
-                    joined_matches = [' '.join(match) for match in matches]
+                    joined_matches = [':'.join(match) for match in matches]
                     log('INFO', f"Analysis completed for task: {task['name']} with {len(joined_matches)} matches: {joined_matches}")
                     return joined_matches
                 else:
@@ -119,28 +121,6 @@ class InitialAnalysisAgent(BaseAgent):
         else:
             log('INFO', f"Analysis completed for task: {task['name']} with no results")
             return []
-
-class VerificationAgent(BaseAgent):
-    def verify(self, analysis_results, task):
-        log('INFO', f"Starting verification for task: {task['name']}")
-        system_prompt = "You are an AI assistant specialised in verifying and formatting reconnaissance analysis results. Your primary goal is to ensure the output strictly adheres to the specified format."
-        user_prompt = f"Verify and format the following analysis results for the task: '{task['description']}'.\n\nResults: {analysis_results}\n\nYour response must strictly follow this format: {task['response']}\n\nDo not state anything other than the result."
-        
-        result = self._send_request(system_prompt, user_prompt)
-        if result is None:
-            return None
-
-        # Optional regex validation
-        if 'regex' in task:
-            log('DEBUG', f"Performing regex validation for task: {task['name']}")
-            regex = task['regex']
-            matches = re.findall(regex, result)
-            joined_matches = [' '.join(match) for match in matches]
-            log('INFO', f"Verification completed for task: {task['name']} with {len(joined_matches)} matches: {joined_matches}\n {result}")
-            return joined_matches  # Return list of joined matches (empty if no match)
-        else:
-            log('INFO', f"Verification completed for task: {task['name']}")
-            return [result]  # Always return list for consistency
 
 class DeduplicationAgent:
     def __init__(self):

@@ -13,7 +13,7 @@
 #
 # Author: Michael Aguilera
 # Date: 17/10/2024
-# Version: 3.0 (Added better deduplication and html reporting)
+# Version: 4.0 (Added blacklist to initial analysis)
 # ============================================================
 
 import os
@@ -24,7 +24,7 @@ import re
 from datetime import datetime
 from colorama import Fore, init
 from dotenv import load_dotenv
-from agents import InitialAnalysisAgent, VerificationAgent, DeduplicationAgent, ConsolidationAgent, ollama_client
+from agents import InitialAnalysisAgent, ConsolidationAgent, ollama_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -68,7 +68,6 @@ def validate_tasks_file(tasks_file_path):
 # Main Analysis Workflow
 def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_types, whitelist_file_types, output_path, window_size=1000, step_size=500):
     initial_agent = InitialAnalysisAgent(OLLAMA_MODEL)
-    verification_agent = VerificationAgent(OLLAMA_MODEL)
     consolidation_agent = ConsolidationAgent()
 
     results = {}
@@ -144,8 +143,8 @@ def main():
     parser.add_argument("-b", "--blacklist", nargs='*', default=["exploit", "loot", "report"], help="List of directories to blacklist from analysis (default: exploit, loot, report)")
     parser.add_argument("-bt", "--blacklist_file_types", nargs='*', default=[], help="List of file types to blacklist from analysis (e.g., .log, .tmp)")
     parser.add_argument("-wt", "--whitelist_file_types", nargs='*', default=[], help="List of file types to whitelist for analysis (e.g., .txt, .json)")
-    parser.add_argument("-w", "--window_size", type=int, default=5000, help="Size of the data chunk window for analysis (default: 500 characters)")
-    parser.add_argument("-s", "--step_size", type=int, default=2500, help="Step size for moving through data chunks (default: 400 characters)")
+    parser.add_argument("-w", "--window_size", type=int, default=6000, help="Size of the data chunk window for analysis (default: 500 characters)")
+    parser.add_argument("-s", "--step_size", type=int, default=3000, help="Step size for moving through data chunks (default: 400 characters)")
     args = parser.parse_args()
 
     # Ensure blacklist and whitelist are not used together
