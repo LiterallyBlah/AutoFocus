@@ -95,13 +95,13 @@
         <h3>Targets</h3>
         <ul>
             {% for target in targets %}
-            <li><a href="#target-{{ target.name }}">{{ target.name }}</a></li>
+            <li><a href="#target-{{ loop.index }}">{{ target.name }}</a></li>
             {% endfor %}
         </ul>
     </nav>
 
     {% for target in targets %}
-    <div id="target-{{ target.name }}" class="target">
+    <div id="target-{{ loop.index }}" class="target">
         <h2>Target: {{ target.name }}</h2>
         {% for task in target.tasks %}
         <div class="task">
@@ -109,7 +109,13 @@
             {% for result in task.results %}
             <div class="result">
                 <p><strong>Result:</strong> {{ result.result | replace('\n', '<br>') | safe }}</p>
-                <p class="meta">File: {{ result.file }}, Chunk: {{ result.chunk_start }}-{{ result.chunk_end }}</p>
+                <p class="meta">
+                    <strong>File:</strong> {{ result.file }}<br>
+                    <strong>Target:</strong> {{ result.target }}<br>
+                    <strong>Chunk Start:</strong> {{ result.chunk_start }}<br>
+                    <strong>Chunk End:</strong> {{ result.chunk_end }}<br>
+                    <strong>Task Name:</strong> {{ result.task_name }}
+                </p>
             </div>
             {% endfor %}
         </div>

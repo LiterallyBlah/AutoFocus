@@ -24,7 +24,7 @@ import re
 from datetime import datetime
 from colorama import Fore, init
 from dotenv import load_dotenv
-from agents import InitialAnalysisAgent, VerificationAgent, DeduplicationAgent, ConsolidationAgent
+from agents import InitialAnalysisAgent, VerificationAgent, DeduplicationAgent, ConsolidationAgent, ollama_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,7 +69,6 @@ def validate_tasks_file(tasks_file_path):
 def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_types, whitelist_file_types, output_path, window_size=1000, step_size=500):
     initial_agent = InitialAnalysisAgent(OLLAMA_MODEL)
     verification_agent = VerificationAgent(OLLAMA_MODEL)
-    dedup_agent = DeduplicationAgent(OLLAMA_MODEL)
     consolidation_agent = ConsolidationAgent()
 
     results = {}
@@ -106,7 +105,6 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
 
             total_windows = (len(content) - window_size) // step_size + 1
             processed_windows = 0
-            previous_results = []
 
             # Loop through content in chunks
             for i in range(0, len(content), step_size):
@@ -114,11 +112,9 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
 
                 # Perform each task on the chunk
                 for task in tasks:
-                    initial_result = initial_agent.analyse(window, task)
-                    if initial_result and "irrelevant" not in initial_result.lower():
-                        verified_results = verification_agent.verify(initial_result, task)
-                        unique_results = dedup_agent.deduplicate(verified_results, previous_results)
-                        for result in unique_results:
+                    initial_results = initial_agent.analyse(window, task)
+                    if initial_results:
+                        for result in initial_results:
                             if task['name'] not in results[target_name]:
                                 results[target_name][task['name']] = []
                             results[target_name][task['name']].append({
@@ -129,7 +125,6 @@ def analyse_directory(directory_path, tasks, blacklist_dirs, blacklist_file_type
                                 "task_name": task['name'],
                                 "result": result
                             })
-                            previous_results.append(result)
                 processed_windows += 1
                 progress = (processed_windows / total_windows) * 100 if total_windows > 0 else 100
                 print(f"\r{Fore.CYAN}Progress: {progress:.2f}%", end="", flush=True)
@@ -149,8 +144,8 @@ def main():
     parser.add_argument("-b", "--blacklist", nargs='*', default=["exploit", "loot", "report"], help="List of directories to blacklist from analysis (default: exploit, loot, report)")
     parser.add_argument("-bt", "--blacklist_file_types", nargs='*', default=[], help="List of file types to blacklist from analysis (e.g., .log, .tmp)")
     parser.add_argument("-wt", "--whitelist_file_types", nargs='*', default=[], help="List of file types to whitelist for analysis (e.g., .txt, .json)")
-    parser.add_argument("-w", "--window_size", type=int, default=1000, help="Size of the data chunk window for analysis (default: 500 characters)")
-    parser.add_argument("-s", "--step_size", type=int, default=500, help="Step size for moving through data chunks (default: 400 characters)")
+    parser.add_argument("-w", "--window_size", type=int, default=5000, help="Size of the data chunk window for analysis (default: 500 characters)")
+    parser.add_argument("-s", "--step_size", type=int, default=2500, help="Step size for moving through data chunks (default: 400 characters)")
     args = parser.parse_args()
 
     # Ensure blacklist and whitelist are not used together
@@ -195,3 +190,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Close the Ollama client connection when the script finishes
+    ollama_client.close()

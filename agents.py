@@ -1,4 +1,5 @@
 import ollama
+from ollama import Client
 import json
 import os
 import re
@@ -18,6 +19,9 @@ logger = logging.getLogger(__name__)
 # Global flag to enable/disable logging
 LOGGING_ENABLED = True
 
+# Global Ollama client
+ollama_client = Client()
+
 def log(level, message):
     if LOGGING_ENABLED:
         if level == 'INFO':
@@ -31,6 +35,9 @@ def log(level, message):
 
 # Helper Functions for Text Normalization and Deduplication
 def normalize_text(text):
+    if not isinstance(text, str):
+        raise ValueError("Input must be a string")
+    
     stop_words = set(stopwords.words('english'))
     stemmer = PorterStemmer()
     
@@ -59,107 +66,150 @@ def are_domain_duplicates(str1, str2):
     # Compare product names and versions separately
     return (product1 == product2) and (version1 == version2)
 
-# Agent Definitions
-class InitialAnalysisAgent:
+class BaseAgent:
     def __init__(self, model):
         self.model = model
-        log('INFO', f"InitialAnalysisAgent initialized with model: {model}")
+        log('INFO', f"{self.__class__.__name__} initialized with model: {model}")
 
-    def analyse(self, text, task):
-        log('INFO', f"Starting analysis for task: {task['name']}")
-        system_prompt = "You are a penetration testing AI assistant specialised in analysing reconnaissance data for specific tasks supplied by the user."
-        user_prompt = f"Analyse the following data for the task: '{task['description']}'.\n\nNew Data: {text}\n\nIf there is no relevant data found, respond with 'irrelevant'. Be concise with your response and if there are multiple results, return them as a list."
+    def _send_request(self, system_prompt, user_prompt):
         try:
             log('DEBUG', f"Sending request to Ollama with system prompt: {system_prompt}")
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': user_prompt},
-            ])
-            result = response['message']['content'].strip()
-            log('INFO', f"Analysis completed for task: {task['name']}")
-            return result
+            response = ollama_client.chat(
+                model=self.model,
+                messages=[
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': user_prompt},
+                ],
+                options={"timeout": 5}  # Add a 5-second timeout
+            )
+            return response['message']['content'].strip()
         except Exception as e:
-            log('ERROR', f"Error in InitialAnalysisAgent: {str(e)}")
-            print(f"\n{Fore.RED}Error: Unable to get response from InitialAnalysisAgent - {str(e)}")
+            log('ERROR', f"Error in {self.__class__.__name__}: {str(e)}")
+            print(f"\n{Fore.RED}Error: Unable to get response from {self.__class__.__name__} - {str(e)}")
             return None
 
+class InitialAnalysisAgent(BaseAgent):
+    def analyse(self, text, task):
+        log('INFO', f"Starting analysis for task: {task['name']}")
+        system_prompt = f"You are a penetration testing AI assistant specialised in analysing data for specific tasks. You are required to conduct the following task: {task['description']}. Ensure your response strictly adheres to the following format: {task['response']}"
+        user_prompt = f"Data: {text}\n\nResults should be returned as a list, each result on a new line prefixed with '- '. If there is no relevant data found, respond with 'no matching results'. Be concise with your response."
+        
+        result = self._send_request(system_prompt, user_prompt)
+        if result is None:
+            return None
 
-class VerificationAgent:
-    def __init__(self, model):
-        self.model = model
-        log('INFO', f"VerificationAgent initialized with model: {model}")
+        # Process the result to extract list items
+        result_list = [line[2:].strip() for line in result.split('\n') if line.startswith('- ')]
+        if result_list:
+            if any('no matching results' in item.lower() for item in result_list):
+                log('INFO', f"Analysis completed for task: {task['name']} with no relevant results")
+                return []
+            else:
+                # Apply regex check if available
+                if 'regex' in task:
+                    log('DEBUG', f"Performing regex validation for task: {task['name']}")
+                    regex = task['regex']
+                    matches = [match for item in result_list for match in re.findall(regex, item)]
+                    joined_matches = [' '.join(match) for match in matches]
+                    log('INFO', f"Analysis completed for task: {task['name']} with {len(joined_matches)} matches: {joined_matches}")
+                    return joined_matches
+                else:
+                    log('INFO', f"Analysis completed for task: {task['name']} with {len(result_list)} results: {result_list}")
+                    return result_list
+        else:
+            log('INFO', f"Analysis completed for task: {task['name']} with no results")
+            return []
 
+class VerificationAgent(BaseAgent):
     def verify(self, analysis_results, task):
         log('INFO', f"Starting verification for task: {task['name']}")
         system_prompt = "You are an AI assistant specialised in verifying and formatting reconnaissance analysis results. Your primary goal is to ensure the output strictly adheres to the specified format."
         user_prompt = f"Verify and format the following analysis results for the task: '{task['description']}'.\n\nResults: {analysis_results}\n\nYour response must strictly follow this format: {task['response']}\n\nDo not state anything other than the result."
-        while True:
-            try:
-                log('DEBUG', f"Sending verification request to Ollama for task: {task['name']}")
-                response = ollama.chat(model=self.model, messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': user_prompt},
-                ])
-                result = response['message']['content'].strip()
+        
+        result = self._send_request(system_prompt, user_prompt)
+        if result is None:
+            return None
 
-                # Optional regex validation
-                if 'regex' in task:
-                    log('DEBUG', f"Performing regex validation for task: {task['name']}")
-                    regex = task['regex']
-                    matches = re.findall(regex, result)
-                    joined_matches = [' '.join(match) for match in matches]
-                    log('INFO', f"Verification completed for task: {task['name']} with {len(joined_matches)} matches: {joined_matches}\n {result}")
-                    return joined_matches  # Return list of joined matches (empty if no match)
-                else:
-                    log('INFO', f"Verification completed for task: {task['name']}")
-                    return [result]  # Always return list for consistency
-            except Exception as e:
-                log('ERROR', f"Error in VerificationAgent: {str(e)}")
-                print(f"\n{Fore.RED}Error: Unable to get response from VerificationAgent - {str(e)}")
-                return None
-
+        # Optional regex validation
+        if 'regex' in task:
+            log('DEBUG', f"Performing regex validation for task: {task['name']}")
+            regex = task['regex']
+            matches = re.findall(regex, result)
+            joined_matches = [' '.join(match) for match in matches]
+            log('INFO', f"Verification completed for task: {task['name']} with {len(joined_matches)} matches: {joined_matches}\n {result}")
+            return joined_matches  # Return list of joined matches (empty if no match)
+        else:
+            log('INFO', f"Verification completed for task: {task['name']}")
+            return [result]  # Always return list for consistency
 
 class DeduplicationAgent:
-    def __init__(self, model):
-        self.model = model
-        log('INFO', f"DeduplicationAgent initialized with model: {model}")
+    def __init__(self):
+        log('INFO', "DeduplicationAgent initialized")
 
     def deduplicate(self, results, previous_results):
-        log('INFO', "Starting deduplication process")
+        log('INFO', f"Starting deduplication process with {len(results)} new results and {len(previous_results)} previous results")
         unique_results = []
-        for result in results:
+        prev_results_updated = previous_results
+        
+        # Loop through new results
+        for index, result in enumerate(results):
+            log('DEBUG', f"Processing result {index + 1}/{len(results)}: {result}")
+            if not isinstance(result, str):
+                log('WARNING', f"Skipping non-string result at index {index}: {result}")
+                continue
+            
+            # Normalize the current result
+            norm_result = normalize_text(result)
+            log('DEBUG', f"Normalized result: {norm_result}")
             is_duplicate = False
-            for previous_result in previous_results:
-                # Step 1: Normalize and check if they are identical
-                norm_result = normalize_text(result)
+            
+            # Loop through previous results to check for duplicates
+            for prev_index, previous_result in enumerate(prev_results_updated):
+                log('DEBUG', f"Comparing with previous result {prev_index + 1}/{len(prev_results_updated)}: {previous_result}")
+                if not isinstance(previous_result, str):
+                    log('WARNING', f"Skipping non-string previous result at index {prev_index}: {previous_result}")
+                    continue
+                
+                # Normalize the previous result
                 norm_previous = normalize_text(previous_result)
+                log('DEBUG', f"Normalized previous result: {norm_previous}")
+
+                # Step 1: Check for exact match
                 if norm_result == norm_previous:
+                    log('INFO', f"Exact match found for result: {result}")
                     is_duplicate = True
                     break
 
-                # Step 2: Domain-specific rules
+                # Step 2: Check for domain-specific duplicate (version numbers, etc.)
                 if are_domain_duplicates(result, previous_result):
+                    log('INFO', f"Domain-specific duplicate found for result: {result}")
                     is_duplicate = True
                     break
 
-                # Step 3: Fuzzy matching if needed
+                # Step 3: Fuzzy matching
                 if is_fuzzy_duplicate(result, previous_result):
+                    log('INFO', f"Fuzzy duplicate found for result: {result}")
                     is_duplicate = True
                     break
-
+            
+            # If no duplicates were found, add to unique results
             if not is_duplicate:
+                log('INFO', f"Unique result found: {result}")
                 unique_results.append(result)
+                prev_results_updated.append(result)
+            else:
+                log('DEBUG', f"Duplicate result skipped: {result}")
 
-        log('INFO', f"Deduplication completed. {len(unique_results)} unique results found")
+        log('INFO', f"Deduplication completed. {len(unique_results)} unique results found out of {len(results)} total results")
         return unique_results
-
 
 class ConsolidationAgent:
     def __init__(self):
         self.html_reporter = HTMLReporter()
+        self.deduplication_agent = DeduplicationAgent()
 
     def consolidate(self, target_name, results, output_path):
-        log('INFO', f"Starting consolidation for target: {target_name}")
+        log('INFO', f"Starting consolidation for target: {target_name} with results: {results}")
         # Load existing results if the file already exists
         if os.path.exists(output_path):
             log('DEBUG', f"Loading existing results from {output_path}")
@@ -171,15 +221,28 @@ class ConsolidationAgent:
 
         # Update the results for the target
         if target_name not in existing_results:
+            log('DEBUG', f"Creating new target: {target_name}")
             existing_results[target_name] = {}
+        
         for task_name, task_results in results.items():
             log('DEBUG', f"Consolidating results for task: {task_name}")
             if task_name not in existing_results[target_name]:
                 existing_results[target_name][task_name] = []
-            existing_results[target_name][task_name].extend(task_results)
+            
+            # Deduplicate results before adding them
+            previous_results = [item['result'] for item in existing_results[target_name][task_name]]
+            new_results = [item['result'] for item in task_results]
+            deduplicated_results = self.deduplication_agent.deduplicate(new_results, previous_results)
+            log('INFO', f"Deduplicated {len(deduplicated_results)} results for task: {task_name}, and the results are: {deduplicated_results}")
+            
+            # Add only unique results to existing results, including extra information
+            for result in task_results:
+                if result['result'] in deduplicated_results and result['result'] not in [item['result'] for item in existing_results[target_name][task_name]]:
+                    existing_results[target_name][task_name].append(result)
 
         # Save updated results
         log('INFO', f"Saving consolidated results to {output_path}")
+        log('DEBUG', f"Updated results: {existing_results}")
         with open(output_path, 'w', encoding='utf-8') as json_file:
             json.dump(existing_results, json_file, indent=4, ensure_ascii=False)
         
