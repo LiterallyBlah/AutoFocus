@@ -72,6 +72,43 @@ pip install -r requirements.txt
 
 3. Configure analysis tasks by editing the `tasks.yaml` file, where you can define the tasks you want AutoFocus to perform.
 
+### Command-line Options
+
+AutoFocus supports various command-line options to customize its behavior. You can view these options by running:
+
+```bash
+python autofocus.py --help
+```
+
+This will display the following help message:
+
+```
+usage: autofocus.py [-h] -i INPUT [-o OUTPUT] -t TASKS [-b [BLACKLIST ...]]
+                    [-bt [BLACKLIST_FILE_TYPES ...]] [-wt [WHITELIST_FILE_TYPES ...]]
+                    [-w WINDOW_SIZE] [-s STEP_SIZE]
+
+AutoFocus Agent-Based Analysis System for Recon Data Processing
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        Path to the input directory containing recon data
+  -o OUTPUT, --output OUTPUT
+                        Directory to save the analysis results (default: output)
+  -t TASKS, --tasks TASKS
+                        Path to the tasks.yml file containing analysis tasks
+  -b [BLACKLIST ...], --blacklist [BLACKLIST ...]
+                        List of directories to blacklist from analysis (default: exploit, loot, report)
+  -bt [BLACKLIST_FILE_TYPES ...], --blacklist_file_types [BLACKLIST_FILE_TYPES ...]
+                        List of file types to blacklist from analysis (e.g., .log, .tmp)
+  -wt [WHITELIST_FILE_TYPES ...], --whitelist_file_types [WHITELIST_FILE_TYPES ...]
+                        List of file types to whitelist for analysis (e.g., .txt, .json)
+  -w WINDOW_SIZE, --window_size WINDOW_SIZE
+                        Size of the data chunk window for analysis (default: 500 characters)
+  -s STEP_SIZE, --step_size STEP_SIZE
+                        Step size for moving through data chunks (default: 400 characters)
+```
+
 ### Example Command
 
 ```bash
