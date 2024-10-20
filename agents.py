@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 LOGGING_ENABLED = True
 
 # Global Ollama client
-ollama_client = Client(timeout=5)
+ollama_client = Client(timeout=os.getenv('OLLAMA_TIMEOUT', 5))
 
 def log(level, message):
     if LOGGING_ENABLED:

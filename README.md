@@ -153,6 +153,20 @@ tasks:
     blacklist: ["notBefore", "notAfter", "Uptime", "Service Info", "ERROR", "NT_STATUS_ACCESS_DENIED"]
 ```
 
+## Configuration
+
+AutoFocus uses environment variables for configuration. These can be set in a `.env` file in the root directory of the project. Here's an example of the contents of the `.env` file:
+
+```
+OLLAMA_MODEL=qwen2.5
+OLLAMA_TIMEOUT=5
+```
+
+- `OLLAMA_MODEL`: Specifies the Ollama model to use for analysis. Default is 'qwen2.5'.
+- `OLLAMA_TIMEOUT`: Sets the timeout (in seconds) for Ollama API requests. Default is 5 seconds.
+
+You can adjust these values to suit your specific requirements and the capabilities of your local setup.
+
 ## Contribution
 
 Contributions are welcome! If you have ideas for improvements, new features, or bug fixes, feel free to open a pull request or raise an issue.
