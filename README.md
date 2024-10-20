@@ -30,7 +30,7 @@ AutoFocus employs a multi-agent system to process and analyse reconnaissance dat
 
 1. **File Enumeration**: The script recursively walks through the directory structure created by AutoRecon, identifying files for analysis.
 
-2. **Data Chunking**: Each file is processed in chunks (default 6000 characters with 3000 character overlap) to ensure efficient handling of large files.
+2. **Data Chunking**: Each file is processed using a sliding window approach (default window size of 6000 characters with a step size of 3000 characters), inspired by data preparation techniques used in forecast models. This method ensures efficient handling of large files while maintaining context across overlapping chunks.
 
 3. **Initial Analysis**: The `InitialAnalysisAgent` processes each chunk of data for each defined task. It uses the Ollama API to interact with a local LLM for initial analysis.
 
